@@ -1,6 +1,10 @@
+#pragma once
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+
+#include <string>
 #include <vector>
 
 struct HYUZU_UE_PakEntry {
@@ -30,7 +34,7 @@ struct HYUZU_UE_PakEntry {
   struct Info {
     uint32_t name_size;
 
-    char* name;
+    std::string name;
     uint8_t null;
 
     uint64_t offset;
@@ -47,19 +51,15 @@ struct HYUZU_UE_PakEntry {
       fread(&name_size, sizeof(uint32_t), 1, file);
       if (name_size < 0) name_size = name_size * -2;
 
-      name = (char*)malloc(name_size);
-      fread(name, name_size - 1, 1, file);
-
-      printf(name);
-      printf("\n");
+      char* name_c = (char*)malloc(name_size);
+      fread(name_c, name_size - 1, 1, file);
+      name = std::string(name_c);
 
       fread(&null, 1, 1, file);
       fread(&offset, sizeof(uint64_t), 1, file);
 
       fread(&compressed_size, sizeof(uint64_t), 1, file);
-
       fread(&size, sizeof(uint64_t), 1, file);
-      printf("size: %i\n", size);
 
       fread(&compression_type, sizeof(uint32_t), 1, file);
 
@@ -73,7 +73,7 @@ struct HYUZU_UE_PakEntry {
 
 struct HYUZU_UE_Directory {
   uint32_t dir_name_size;
-  char* dir_name;
+  std::string dir_name;
 
   uint8_t null;
   uint32_t amount_of_files;
@@ -83,8 +83,9 @@ struct HYUZU_UE_Directory {
 
     fread(&dir_name_size, sizeof(uint32_t), 1, file);
 
-    dir_name = (char*)malloc(dir_name_size);
-    fread(dir_name, dir_name_size - 1, 1, file);
+    char* dir_name_c = (char*)malloc(dir_name_size);
+    fread(dir_name_c, dir_name_size - 1, 1, file);
+    dir_name = std::string(dir_name_c);
 
     fread(&null, 1, 1, file);
     fread(&amount_of_files, sizeof(uint32_t), 1, file);

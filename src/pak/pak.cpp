@@ -2,8 +2,7 @@
 
 HYUZU_UE_Pak* HYUZU_Pak_Load(char* path) {
   FILE *pak_file = fopen(path, "rb");
-
-  HYUZU_UE_Pak* pak = (HYUZU_UE_Pak*)malloc(sizeof(HYUZU_UE_Pak));
+  HYUZU_UE_Pak* pak = new HYUZU_UE_Pak;
       
   if (pak_file == NULL) {
       perror("[HYUZU] Error. Failed to load PAK File.");
@@ -14,6 +13,5 @@ HYUZU_UE_Pak* HYUZU_Pak_Load(char* path) {
   pak->serialize_entries(pak_file);
 
   fclose(pak_file);
-
   return pak;
 }
