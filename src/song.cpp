@@ -33,7 +33,15 @@ void HYUZU_Song_GetMetadata(HYUZU_UE_Pak* pak, HYUZU_Song* song) {
 
       if (pos != std::string::npos) {
         if (e->info.name.compare(e->info.name.length() - 5, 5, ".uexp") == 0) {
-          
+          HYUZU_UE_Texture2D* tex = new HYUZU_UE_Texture2D;
+          pos = e->info.name.find("_small");
+
+          if (pos != std::string::npos) {
+            printf("It's small!\n");
+            tex->serialize(e->data);
+          }
+
+          delete tex;
         }
       }
   }

@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "pak/pak.h"
+#include "pak/ue_types.h"
 
 struct HYUZU_Song {
   struct BasicInfo {

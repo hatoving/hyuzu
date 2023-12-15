@@ -5,6 +5,8 @@
 #include <stdint.h>
 
 #include <string>
+#include <iostream>
+#include <fstream>
 #include <vector>
 
 struct HYUZU_UE_PakEntry {
@@ -14,21 +16,24 @@ struct HYUZU_UE_PakEntry {
   uint8_t sha_hash[20];
 
   uint32_t null;
-  uint8_t data;
+  std::vector<uint8_t> data;
 
-  void serialize(FILE* file) {
-    long pos = ftell(file);
-    fseek(file, info.offset, SEEK_SET);
+  void serialize(std::ifstream& file) {
+    std::streampos pos = file.tellg();
+    file.seekg(info.offset, std::ios::beg);
     
-    fread(&size, sizeof(int64_t), 1, file);
-    fread(&uncompressed_size, sizeof(int64_t), 1, file);
-    fread(&compression_method_index, sizeof(int32_t), 1, file);
-    fread(&sha_hash, sizeof(uint8_t[20]), 1, file);
+    file.read(reinterpret_cast<char*>(&size), sizeof(size));
+    file.read(reinterpret_cast<char*>(&uncompressed_size), sizeof(uncompressed_size));
+    file.read(reinterpret_cast<char*>(&compression_method_index), sizeof(compression_method_index));
+    file.read(reinterpret_cast<char*>(&sha_hash), 20);
 
-    fread(&null, 5, 1, file);
-    fread(&data, size, 1, file);
+    file.read(reinterpret_cast<char*>(&null), 5);
 
-    fseek(file, pos, SEEK_SET);
+    std::vector<uint8_t> data_vector(uncompressed_size);
+    file.read(reinterpret_cast<char*>(data_vector.data()), uncompressed_size);
+
+    data = data_vector;
+    file.seekg(pos, std::ios::beg);
   }
 
   struct Info {
@@ -47,25 +52,25 @@ struct HYUZU_UE_PakEntry {
     uint32_t unk2;
     uint8_t unk3;
 
-    void serialize(FILE* file) {
-      fread(&name_size, sizeof(uint32_t), 1, file);
+    void serialize(std::ifstream& file) {
+      file.read(reinterpret_cast<char*>(&name_size), sizeof(name_size));
       if (name_size < 0) name_size = name_size * -2;
 
-      char* name_c = (char*)malloc(name_size);
-      fread(name_c, name_size - 1, 1, file);
+      char* name_c = (char*)malloc(name_size - 1);
+      file.read(name_c, name_size - 1);
       name = std::string(name_c);
 
-      fread(&null, 1, 1, file);
-      fread(&offset, sizeof(uint64_t), 1, file);
+      file.read(reinterpret_cast<char*>(&null), 1);
+      file.read(reinterpret_cast<char*>(&offset), sizeof(uint64_t));
 
-      fread(&compressed_size, sizeof(uint64_t), 1, file);
-      fread(&size, sizeof(uint64_t), 1, file);
+      file.read(reinterpret_cast<char*>(&compressed_size), sizeof(uint64_t));
+      file.read(reinterpret_cast<char*>(&size), sizeof(uint64_t));
 
-      fread(&compression_type, sizeof(uint32_t), 1, file);
+      file.read(reinterpret_cast<char*>(&compression_type), sizeof(uint32_t));
 
-      fread(&unk, 20, 1, file);
-      fread(&unk2, 4, 1, file);
-      fread(&unk3, 1, 1, file);
+      file.read(reinterpret_cast<char*>(&unk), 20);
+      file.read(reinterpret_cast<char*>(&unk2), 4);
+      file.read(reinterpret_cast<char*>(&unk3), 1);
     }
   };
   Info info;
@@ -78,17 +83,20 @@ struct HYUZU_UE_Directory {
   uint8_t null;
   uint32_t amount_of_files;
 
-  void serialize(FILE* file, int64_t offset) {
-    fseek(file, offset, SEEK_SET);
+  void serialize(std::ifstream& file, int64_t offset) {
+    file.seekg((int)offset, std::ios::beg);
 
-    fread(&dir_name_size, sizeof(uint32_t), 1, file);
+    file.read(reinterpret_cast<char*>(&dir_name_size), sizeof(dir_name_size));
 
-    char* dir_name_c = (char*)malloc(dir_name_size);
-    fread(dir_name_c, dir_name_size - 1, 1, file);
-    dir_name = std::string(dir_name_c);
+    char* name_buffer = new char[dir_name_size - 1];
 
-    fread(&null, 1, 1, file);
-    fread(&amount_of_files, sizeof(uint32_t), 1, file);
+    file.read(name_buffer, dir_name_size - 1);
+    dir_name = std::string(name_buffer);
+
+    printf("%s\n", dir_name.c_str());
+
+    file.read(reinterpret_cast<char*>(&null), 1);
+    file.read(reinterpret_cast<char*>(&amount_of_files), sizeof(amount_of_files));
   }
 };
 
@@ -107,40 +115,42 @@ struct HYUZU_UE_Pak {
   bool is_frozen = false;
   char compressed_name[32];
   
-  void serialize(FILE* file) {
-    fseek(file, 0, SEEK_END);
-    long file_size = ftell(file);
-    fseek(file, file_size - (int)offset, SEEK_SET);
+  void serialize(std::ifstream& file) {
+    file.seekg(0, std::ios::end);
+    long file_size = file.tellg();
+    file.seekg(0, std::ios::beg);
 
-    fread(&guid, sizeof(char[16]), 1, file);
-    fread(&is_encrypted, sizeof(bool), 1, file);
-    fread(&magic, sizeof(uint32_t), 1, file);
+    file.seekg((int)file_size - (int)offset, std::ios::beg);
+
+    file.read(guid, sizeof(guid));
+    file.read(reinterpret_cast<char*>(&is_encrypted), sizeof(is_encrypted));
+    file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
 
     if (magic != 0x5A6F12E1) {
       printf("[HYUZU] Error. Magic invalid.\n");
     }
 
-    fread(&version, sizeof(int), 1, file);
+    file.read(reinterpret_cast<char*>(&version), sizeof(version));
 
-    fread(&index_offset, sizeof(int64_t), 1, file);
-    fread(&index_size, sizeof(int64_t), 1, file);
+    file.read(reinterpret_cast<char*>(&index_offset), sizeof(index_offset));
+    file.read(reinterpret_cast<char*>(&index_size), sizeof(index_size));
 
-    fread(&sha_hash, sizeof(uint8_t[20]), 1, file);
+    file.read(reinterpret_cast<char*>(&sha_hash), sizeof(sha_hash));
     
     //if the pak version is frozen
     if (version == 9) {
-      fread(&is_frozen, sizeof(bool), 1, file);
+      file.read(reinterpret_cast<char*>(&is_frozen), sizeof(is_frozen));
     }
 
-    fread(&compressed_name, sizeof(char[30]), 1, file);
+    file.read(compressed_name, sizeof(compressed_name));
   }
   HYUZU_UE_Directory directory;
   std::vector<HYUZU_UE_PakEntry*> entries;
 
-  void serialize_entries(FILE* file) {
+  void serialize_entries(std::ifstream& file) {
     for (int i = 0; i < (int)directory.amount_of_files; i++)
     {
-      HYUZU_UE_PakEntry* entry = (HYUZU_UE_PakEntry*)malloc(sizeof(HYUZU_UE_PakEntry));
+      HYUZU_UE_PakEntry* entry = new HYUZU_UE_PakEntry;
 
       entry->info.serialize(file);
       entry->serialize(file);
@@ -150,4 +160,4 @@ struct HYUZU_UE_Pak {
   }
 };
 
-HYUZU_UE_Pak* HYUZU_Pak_Load(char* path);
+HYUZU_UE_Pak* HYUZU_Pak_Load(std::string path);
