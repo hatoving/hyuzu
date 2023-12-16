@@ -10,6 +10,8 @@
 #include <vector>
 
 struct HYUZU_UE_PakEntry {
+  uint64_t null1;
+
   int64_t size;
   int64_t uncompressed_size;
   int32_t compression_method_index;
@@ -21,16 +23,19 @@ struct HYUZU_UE_PakEntry {
   void serialize(std::ifstream& file) {
     std::streampos pos = file.tellg();
     file.seekg(info.offset, std::ios::beg);
+
+    uint64_t null1;
+    file.read(reinterpret_cast<char*>(&null1), sizeof(uint64_t));
     
-    file.read(reinterpret_cast<char*>(&size), sizeof(size));
-    file.read(reinterpret_cast<char*>(&uncompressed_size), sizeof(uncompressed_size));
-    file.read(reinterpret_cast<char*>(&compression_method_index), sizeof(compression_method_index));
-    file.read(reinterpret_cast<char*>(&sha_hash), 20);
+    file.read(reinterpret_cast<char*>(&size), sizeof(uint64_t));
+    file.read(reinterpret_cast<char*>(&uncompressed_size), sizeof(uint64_t));
+    file.read(reinterpret_cast<char*>(&compression_method_index), sizeof(uint32_t));
+    file.read(reinterpret_cast<char*>(&sha_hash), sizeof(uint8_t) * 20);
 
     file.read(reinterpret_cast<char*>(&null), 5);
 
-    std::vector<uint8_t> data_vector(uncompressed_size);
-    file.read(reinterpret_cast<char*>(data_vector.data()), uncompressed_size);
+    std::vector<uint8_t> data_vector(info.size);
+    file.read(reinterpret_cast<char*>(data_vector.data()), info.size);
 
     data = data_vector;
     file.seekg(pos, std::ios::beg);
@@ -58,7 +63,9 @@ struct HYUZU_UE_PakEntry {
 
       char* name_c = (char*)malloc(name_size - 1);
       file.read(name_c, name_size - 1);
+
       name = std::string(name_c);
+      name.erase(name.size() - (name.size() - (name_size - 1)), (name.size() - (name_size - 1)));
 
       file.read(reinterpret_cast<char*>(&null), 1);
       file.read(reinterpret_cast<char*>(&offset), sizeof(uint64_t));
@@ -68,8 +75,8 @@ struct HYUZU_UE_PakEntry {
 
       file.read(reinterpret_cast<char*>(&compression_type), sizeof(uint32_t));
 
-      file.read(reinterpret_cast<char*>(&unk), 20);
-      file.read(reinterpret_cast<char*>(&unk2), 4);
+      file.read(reinterpret_cast<char*>(&unk), sizeof(uint8_t) * 20);
+      file.read(reinterpret_cast<char*>(&unk2), sizeof(uint32_t));
       file.read(reinterpret_cast<char*>(&unk3), 1);
     }
   };
@@ -92,8 +99,6 @@ struct HYUZU_UE_Directory {
 
     file.read(name_buffer, dir_name_size - 1);
     dir_name = std::string(name_buffer);
-
-    printf("%s\n", dir_name.c_str());
 
     file.read(reinterpret_cast<char*>(&null), 1);
     file.read(reinterpret_cast<char*>(&amount_of_files), sizeof(amount_of_files));

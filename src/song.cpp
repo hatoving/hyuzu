@@ -13,6 +13,7 @@ void HYUZU_Song_GetMetadata(HYUZU_UE_Pak* pak, HYUZU_Song* song) {
       auto pos = e->info.name.find("DLC/Songs/");
 
       if (pos != std::string::npos) {
+          printf("It's small! %s\n", e->info.name.c_str());
           std::string name;
 
           for (size_t i = pos + 10; i != '\0'; i++)
@@ -23,8 +24,8 @@ void HYUZU_Song_GetMetadata(HYUZU_UE_Pak* pak, HYUZU_Song* song) {
 
               name += e->info.name[i];
           }
-
           if (e->info.name == ("DLC/Songs/" + name + "/Meta_" + name + ".uasset")) {
+            printf("Name matches!\n");
             song->info.short_name = name;
           }
       }
@@ -33,15 +34,24 @@ void HYUZU_Song_GetMetadata(HYUZU_UE_Pak* pak, HYUZU_Song* song) {
 
       if (pos != std::string::npos) {
         if (e->info.name.compare(e->info.name.length() - 5, 5, ".uexp") == 0) {
-          HYUZU_UE_Texture2D* tex = new HYUZU_UE_Texture2D;
           pos = e->info.name.find("_small");
 
           if (pos != std::string::npos) {
-            printf("It's small!\n");
-            tex->serialize(e->data);
-          }
+              song->info.cover->serialize(e->data);
 
-          delete tex;
+              song->info.cover_img = {
+                  0,
+                  (int)song->info.cover->mips[0].width,
+                  (int)song->info.cover->mips[0].height,
+                  1,
+                  PIXELFORMAT_COMPRESSED_DXT1_RGB
+              };
+
+              // FUCK YEAAHHHH!!!
+              song->info.cover_img.data = RL_MALLOC(song->info.cover->mips[0].data.size());
+              memcpy(song->info.cover_img.data, song->info.cover->mips[0].data.data(), (unsigned int)song->info.cover->mips[0].data.size());
+              //ExportImage(rawImage, "tex_exported.png");
+          }
         }
       }
   }
