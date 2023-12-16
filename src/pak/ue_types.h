@@ -9,6 +9,10 @@
 #include <fstream>
 #include <cstring>
 #include <vector>
+#include <unordered_map>
+#include <any>
+
+#include "uasset.h"
 
 template <typename T>
 T HYUZU_UE_ReadValueFromVector(const std::vector<uint8_t>& data, size_t& offset, size_t size) {
@@ -19,6 +23,16 @@ T HYUZU_UE_ReadValueFromVector(const std::vector<uint8_t>& data, size_t& offset,
     } else {
         throw std::runtime_error("Not enough data in the vector");
     }
+}
+
+inline uint8_t* HYUZU_UE_ReadBytesFromVector(const std::vector<uint8_t>& data, size_t& offset, size_t size) {
+    uint8_t* signature = new uint8_t[size]; // Allocate memory for the array
+
+    for (size_t i = 0; i < size; ++i) {
+        signature[i] = HYUZU_UE_ReadValueFromVector<uint8_t>(data, offset, 1);
+    }
+
+    return signature;
 }
 
 inline std::vector<uint8_t> HYUZU_UE_SplitVector(const std::vector<uint8_t>& originalVector, size_t& offset, size_t length) {
@@ -38,6 +52,7 @@ inline std::vector<uint8_t> HYUZU_UE_SplitVector(const std::vector<uint8_t>& ori
     return subVector;
 }
 
+std::unordered_map<std::string, std::any> HYUZU_UE_GetMetadataFromFile(std::vector<uint8_t> uasset, std::vector<uint8_t> uexp);
 
 struct HYUZU_UE_Texture2D {
   size_t pos = 0;

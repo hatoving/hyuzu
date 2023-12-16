@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <unordered_map>
 
 struct HYUZU_UE_PakEntry {
   uint64_t null1;
@@ -150,7 +151,7 @@ struct HYUZU_UE_Pak {
     file.read(compressed_name, sizeof(compressed_name));
   }
   HYUZU_UE_Directory directory;
-  std::vector<HYUZU_UE_PakEntry*> entries;
+  std::unordered_map<std::string, HYUZU_UE_PakEntry*> entries;
 
   void serialize_entries(std::ifstream& file) {
     for (int i = 0; i < (int)directory.amount_of_files; i++)
@@ -160,7 +161,7 @@ struct HYUZU_UE_Pak {
       entry->info.serialize(file);
       entry->serialize(file);
 
-      entries.push_back(entry);
+      entries[entry->info.name] = entry;
     }
   }
 };

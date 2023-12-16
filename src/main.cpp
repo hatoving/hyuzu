@@ -15,7 +15,7 @@ int main() {
   HYUZU_Song* song = new HYUZU_Song;
 
   song = HYUZU_Song_Load(pak);
-  Texture2D tex = LoadTextureFromImage(song->info.cover_img);
+  Texture2D tex = LoadTextureFromImage(song->cover);
 
   SetTargetFPS(60);
 
