@@ -55,5 +55,8 @@ void HYUZU_Song_GetMetadata(HYUZU_UE_Pak* pak, HYUZU_Song* song) {
     }
 
     std::unordered_map<std::string, std::any> metadata = HYUZU_UE_GetMetadataFromFile(pak->entries["DLC/Songs/" + song->short_name + "/Meta_" + song->short_name + ".uasset"]->data,
-                                                         pak->entries["DLC/Songs/" + song->short_name + "/Meta_" + song->short_name + ".uexp"]->data);
+                                                                                      pak->entries["DLC/Songs/" + song->short_name + "/Meta_" + song->short_name + ".uexp"]->data);
+
+    std::unordered_map<std::string, std::any> bass_metadata = HYUZU_UE_GetMetadataFromFile(pak->entries["Audio/Songs/" + song->short_name + "/" + song->short_name + "bs/Meta_" + song->short_name + "bs.uasset"]->data,
+                                                                                           pak->entries["Audio/Songs/" + song->short_name + "/" + song->short_name + "bs/Meta_" + song->short_name + "bs.uexp"]->data);
 }

@@ -84,22 +84,22 @@ UEAssetInfo HYUZU_UE_ExtractUAsset(std::vector<uint8_t> data, size_t& offset_ua)
 }
 
 void HYUZU_UE_ExtractUExp(std::vector<uint8_t> data, UEAssetInfo info, std::unordered_map<std::string, std::any>& metadata, size_t& offset_ue) {
+    bool check = true;
     while (offset_ue <= data.size()) {
-
       std::string name_id = info.names[HYUZU_UE_ReadValueFromVector<uint64_t>(data, offset_ue, 8)].string;
 
       if (name_id == "None") {
-          try {
-              std::string name_id = info.names[HYUZU_UE_ReadValueFromVector<uint64_t>(data, offset_ue, 8)].string;
+          if (offset_ue + 8 >= data.size()) {
+            break;
           }
-          catch(const std::exception& e) {
-              break;
+          else if (check) {
+            name_id = info.names[HYUZU_UE_ReadValueFromVector<uint64_t>(data, offset_ue, 8)].string;
+            check = false;
           }
       }
 
       std::string class_id = info.names[HYUZU_UE_ReadValueFromVector<uint64_t>(data, offset_ue, 8)].string;
       printf("\n%s, %s\n", name_id.c_str(), class_id.c_str());
-
       uint64_t length = HYUZU_UE_ReadValueFromVector<uint64_t>(data, offset_ue, 8);
 
       if (class_id == "NameProperty") {
@@ -167,8 +167,74 @@ void HYUZU_UE_ExtractUExp(std::vector<uint8_t> data, UEAssetInfo info, std::unor
           metadata[name_id] = value;
           printf("%i\n", value);
       } else if (class_id == "ArrayProperty") {
-          metadata[name_id] = 0;
-          printf("%i\n", 0);
+          std::string a_class = info.names[HYUZU_UE_ReadValueFromVector<uint64_t>(data, offset_ue, 8)].string;
+
+          offset_ue += 1;
+          uint16_t amount_values = HYUZU_UE_ReadValueFromVector<uint16_t>(data, offset_ue, 4);
+
+          std::vector<std::any> values;
+           
+          if (a_class == "ObjectProperty") {
+              for (int i = 0; i < amount_values; i++)
+              {
+                  ImportInfo value = info.imports[HYUZU_UE_ReadValueFromVector<uint32_t>(data, offset_ue, 4) ^ 0xFFFFFFFF];
+                  values.push_back(value);
+              }
+          } else if (a_class == "FloatProperty") {
+              for (int i = 0; i < amount_values; i++)
+              {
+                  float value = HYUZU_UE_ReadValueFromVector<float>(data, offset_ue, 4);
+                  values.push_back(value);
+              }
+          } else if (a_class == "SoftObjectProperty") {
+              std::unordered_map<std::string, std::any> sobjectp_values;
+              for (int i = 0; i < amount_values; i++)
+              {
+                  offset_ue += 1;
+
+                  std::string name = info.names[HYUZU_UE_ReadValueFromVector<uint32_t>(data, offset_ue, 4)].string;
+                  uint64_t value = HYUZU_UE_ReadValueFromVector<uint64_t>(data, offset_ue, 8);
+
+                  sobjectp_values[name] = value;
+                  values.push_back(sobjectp_values);
+              }
+              offset_ue -= 1;
+          }
+          
+          metadata[name_id] = values;
+          printf("%s, amount: %i\n", a_class.c_str(), amount_values);
+      } else if (class_id == "ObjectProperty") {
+          offset_ue += 1;
+          ImportInfo value = info.imports[HYUZU_UE_ReadValueFromVector<uint32_t>(data, offset_ue, 4) ^ 0xFFFFFFFF];
+          metadata[name_id] = value;
+          printf("%s, %s\n", info.names[value.name_id].string.c_str(), info.names[value.class_id].string.c_str());
+      } else if (class_id == "StructProperty") {
+          size_t cur_offset = offset_ue;
+
+          std::string struct_class = info.names[HYUZU_UE_ReadValueFromVector<uint64_t>(data, offset_ue, 8)].string;
+          std::vector<std::any> struct_values;
+
+          if (struct_class == "Transposes") {
+              offset_ue += 17;
+
+              while (offset_ue <= cur_offset + length) {
+                  std::string key = info.names[HYUZU_UE_ReadValueFromVector<uint64_t>(data, offset_ue, 8)].string;
+                  offset_ue += 8;
+                  int value = HYUZU_UE_ReadValueFromVector<int>(data, offset_ue, 4);
+                  offset_ue += 9;
+                  struct_values.push_back(value);
+              }
+          }
+
+          metadata[name_id] = struct_values;
+          
+          std::string values_text = "{ ";
+          for (int i = 0; i < struct_values.size(); i++) {
+              if (i != struct_values.size() - 1) values_text += std::to_string(std::any_cast<int>(struct_values[i])) + ", ";
+              else values_text += std::to_string(std::any_cast<int>(struct_values[i]));
+          }
+          values_text += " }";
+          printf("%s\n", values_text.c_str());
       } else break;
     }
 }
