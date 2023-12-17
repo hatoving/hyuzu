@@ -247,5 +247,21 @@ void HYUZU_UE_ExtractUExp(std::vector<uint8_t> data, UEAssetInfo info, std::unor
           //printf("%s\n", values_text.c_str());
       } else break;
     }
-    printf("Ddne!\n");
+}
+
+std::vector<float> HYUZU_UE_ConvertStringsToFloats(std::vector<std::string> strings) {
+    std::vector<float> result;
+
+    for (const auto& str : strings) {
+        try {
+            float value = std::stof(str);
+            result.push_back(value);
+        } catch (const std::invalid_argument& e) {
+            std::cerr << "Error converting string to float: " << e.what() << std::endl;
+        } catch (const std::out_of_range& e) {
+            std::cerr << "Error converting string to float: " << e.what() << std::endl;
+        }
+    }
+
+    return result;
 }
