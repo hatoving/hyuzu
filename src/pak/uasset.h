@@ -32,4 +32,4 @@ struct UEAssetInfo {
 };
 
 UEAssetInfo HYUZU_UE_ExtractUAsset(std::vector<uint8_t> data, size_t& offset_ua);
-void HYUZU_UE_ExtractUExp(std::vector<uint8_t> data, UEAssetInfo info, std::unordered_map<std::string, std::any>& metadata, size_t& offset_ue);
+void HYUZU_UE_ExtractUExp(std::vector<uint8_t> data, UEAssetInfo info, std::unordered_map<std::string, std::vector<std::string>>& metadata, size_t& offset_ue);

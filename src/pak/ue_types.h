@@ -52,7 +52,7 @@ inline std::vector<uint8_t> HYUZU_UE_SplitVector(const std::vector<uint8_t>& ori
     return subVector;
 }
 
-std::unordered_map<std::string, std::any> HYUZU_UE_GetMetadataFromFile(std::vector<uint8_t> uasset, std::vector<uint8_t> uexp);
+std::unordered_map<std::string, std::vector<std::string>> HYUZU_UE_GetMetadataFromFile(std::vector<uint8_t> uasset, std::vector<uint8_t> uexp);
 
 struct HYUZU_UE_Texture2D {
   size_t pos = 0;

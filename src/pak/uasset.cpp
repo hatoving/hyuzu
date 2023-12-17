@@ -83,7 +83,7 @@ UEAssetInfo HYUZU_UE_ExtractUAsset(std::vector<uint8_t> data, size_t& offset_ua)
   return {names, imports};
 }
 
-void HYUZU_UE_ExtractUExp(std::vector<uint8_t> data, UEAssetInfo info, std::unordered_map<std::string, std::any>& metadata, size_t& offset_ue) {
+void HYUZU_UE_ExtractUExp(std::vector<uint8_t> data, UEAssetInfo info, std::unordered_map<std::string, std::vector<std::string>>& metadata, size_t& offset_ue) {
     bool check = true;
     while (offset_ue <= data.size()) {
       std::string name_id = info.names[HYUZU_UE_ReadValueFromVector<uint64_t>(data, offset_ue, 8)].string;
@@ -99,8 +99,9 @@ void HYUZU_UE_ExtractUExp(std::vector<uint8_t> data, UEAssetInfo info, std::unor
       }
 
       std::string class_id = info.names[HYUZU_UE_ReadValueFromVector<uint64_t>(data, offset_ue, 8)].string;
-      printf("\n%s, %s\n", name_id.c_str(), class_id.c_str());
+      //printf("%s, %s\n", name_id.c_str(), class_id.c_str());
       uint64_t length = HYUZU_UE_ReadValueFromVector<uint64_t>(data, offset_ue, 8);
+      std::vector<std::string> vs;
 
       if (class_id == "NameProperty") {
           offset_ue += 1;
@@ -108,16 +109,18 @@ void HYUZU_UE_ExtractUExp(std::vector<uint8_t> data, UEAssetInfo info, std::unor
           std::string name = info.names[HYUZU_UE_ReadValueFromVector<uint32_t>(data, offset_ue, 4)].string;
           uint32_t name_unknown = HYUZU_UE_ReadValueFromVector<uint32_t>(data, offset_ue, 4);
 
-          metadata[name_id] = name;
-          printf("%s\n", name.c_str());
+          vs.push_back(name);
+          metadata[name_id] = vs;
+          //printf("%s\n", name.c_str());
       } else if (class_id == "SoftObjectProperty") {
           offset_ue += 1;
 
           std::string name = info.names[HYUZU_UE_ReadValueFromVector<uint32_t>(data, offset_ue, 4)].string;
           uint64_t value = HYUZU_UE_ReadValueFromVector<uint64_t>(data, offset_ue, 8);
 
-          metadata[name_id] = value;
-          printf("%s, %i\n", name.c_str(), value);
+          vs.push_back(name);
+          metadata[name_id] = vs;
+          //printf("%s, %i\n", name.c_str(), value);
       } else if (class_id == "TextProperty") {
           offset_ue += 1;
 
@@ -151,21 +154,23 @@ void HYUZU_UE_ExtractUExp(std::vector<uint8_t> data, UEAssetInfo info, std::unor
               texts += " }";
               
               metadata[name_id] = strings;
-              printf("%s\n", texts.c_str());
+              //printf("%s\n", texts.c_str());
           }
       } else if (class_id == "EnumProperty") {
           std::string enum_type = info.names[HYUZU_UE_ReadValueFromVector<uint64_t>(data, offset_ue, 8)].string;
           offset_ue += 1;
           std::string enum_value = info.names[HYUZU_UE_ReadValueFromVector<uint64_t>(data, offset_ue, 8)].string;
 
-          metadata[name_id] = enum_value;
-          printf("%s\n", enum_value.c_str());
+          vs.push_back(enum_value);
+          metadata[name_id] = vs;
+          //printf("%s\n", enum_value.c_str());
       } else if (class_id == "IntProperty") {
           offset_ue += 1;
           int value = HYUZU_UE_ReadValueFromVector<int>(data, offset_ue, 4);
 
-          metadata[name_id] = value;
-          printf("%i\n", value);
+          vs.push_back(std::to_string(value));
+          metadata[name_id] = vs;
+          //printf("%i\n", value);
       } else if (class_id == "ArrayProperty") {
           std::string a_class = info.names[HYUZU_UE_ReadValueFromVector<uint64_t>(data, offset_ue, 8)].string;
 
@@ -185,6 +190,7 @@ void HYUZU_UE_ExtractUExp(std::vector<uint8_t> data, UEAssetInfo info, std::unor
               {
                   float value = HYUZU_UE_ReadValueFromVector<float>(data, offset_ue, 4);
                   values.push_back(value);
+                  vs.push_back(std::to_string(value));
               }
           } else if (a_class == "SoftObjectProperty") {
               std::unordered_map<std::string, std::any> sobjectp_values;
@@ -196,18 +202,20 @@ void HYUZU_UE_ExtractUExp(std::vector<uint8_t> data, UEAssetInfo info, std::unor
                   uint64_t value = HYUZU_UE_ReadValueFromVector<uint64_t>(data, offset_ue, 8);
 
                   sobjectp_values[name] = value;
+                  vs.push_back(std::to_string(value));
                   values.push_back(sobjectp_values);
               }
               offset_ue -= 1;
           }
           
-          metadata[name_id] = values;
-          printf("%s, amount: %i\n", a_class.c_str(), amount_values);
+          metadata[name_id] = vs;
+          //metadata[name_id] = values;
+          //printf("%s, amount: %i\n", a_class.c_str(), amount_values);
       } else if (class_id == "ObjectProperty") {
           offset_ue += 1;
           ImportInfo value = info.imports[HYUZU_UE_ReadValueFromVector<uint32_t>(data, offset_ue, 4) ^ 0xFFFFFFFF];
-          metadata[name_id] = value;
-          printf("%s, %s\n", info.names[value.name_id].string.c_str(), info.names[value.class_id].string.c_str());
+          //metadata[name_id] = value;
+          //printf("%s, %s\n", info.names[value.name_id].string.c_str(), info.names[value.class_id].string.c_str());
       } else if (class_id == "StructProperty") {
           size_t cur_offset = offset_ue;
 
@@ -223,10 +231,12 @@ void HYUZU_UE_ExtractUExp(std::vector<uint8_t> data, UEAssetInfo info, std::unor
                   int value = HYUZU_UE_ReadValueFromVector<int>(data, offset_ue, 4);
                   offset_ue += 9;
                   struct_values.push_back(value);
+                  vs.push_back(std::to_string(value));
               }
           }
 
-          metadata[name_id] = struct_values;
+          metadata[name_id] = vs;
+          //metadata[name_id] = struct_values;
           
           std::string values_text = "{ ";
           for (int i = 0; i < struct_values.size(); i++) {
@@ -234,7 +244,8 @@ void HYUZU_UE_ExtractUExp(std::vector<uint8_t> data, UEAssetInfo info, std::unor
               else values_text += std::to_string(std::any_cast<int>(struct_values[i]));
           }
           values_text += " }";
-          printf("%s\n", values_text.c_str());
+          //printf("%s\n", values_text.c_str());
       } else break;
     }
+    printf("Ddne!\n");
 }
