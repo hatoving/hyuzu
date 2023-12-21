@@ -8,6 +8,8 @@
 #include "pak/pak.h"
 #include "song/song.h"
 
+#include "game/audio.h"
+
 #if defined(PLATFORM_DESKTOP)
     #define GLSL_VERSION            330
 #else   // PLATFORM_ANDROID, PLATFORM_WEB
@@ -15,15 +17,20 @@
 #endif
 
 int main() {
-  SetTraceLogLevel(LOG_WARNING | LOG_ERROR);
+  //SetTraceLogLevel(LOG_WARNING | LOG_ERROR);
   InitWindow(1280, 720, "raylib [core] example - basic window");
+  InitAudioDevice();
 
   Shader cover_shader = LoadShader(0, "data/shaders/shd_album_cover.fs");
 
-  HYUZU_UE_Pak* pak = HYUZU_Pak_Load("oops.pak");
+  float radius = 0.25f;
+  SetShaderValue(cover_shader, GetShaderLocation(cover_shader, "corner_scale"), &radius, SHADER_UNIFORM_FLOAT);
+
+  HYUZU_UE_Pak* pak = HYUZU_Pak_Load("paks/fake.pak");
   HYUZU_Song* song = new HYUZU_Song;
 
   song = HYUZU_Song_Load(pak);
+  Sound lead = LoadSound("data/LEAD.ogg");
 
   Texture2D tex = LoadTextureFromImage(song->cover);
   Texture2D mask = LoadTexture("data/cover_mask.png");
@@ -38,6 +45,7 @@ int main() {
   camera.projection = CAMERA_PERSPECTIVE;
 
   RenderTexture2D target = LoadRenderTexture(1280, 720);
+  PlayAudio(lead);
 
   while (!WindowShouldClose())
   {
@@ -56,7 +64,6 @@ int main() {
           DrawTextureRec(target.texture, { 0, 0, (float)target.texture.width, (float)-target.texture.height }, { 0, 0 }, WHITE);
 
           BeginShaderMode(cover_shader);
-              SetShaderValueTexture(cover_shader, GetShaderLocation(cover_shader, "texture0"), tex);
               DrawTexture(tex, 30, 30, WHITE);
               DrawTexture(mask, 30, 30, WHITE);
           EndShaderMode();
@@ -73,6 +80,10 @@ int main() {
 
   UnloadRenderTexture(target);
   UnloadShader(cover_shader);
+  StopSound(lead);
+  UnloadSound(lead);
+
+  CloseAudioDevice();
   CloseWindow();
   
   delete pak;
