@@ -12,26 +12,32 @@
 
 #include "ue_types.h"
 
-struct NameInfo {
-    uint32_t size;
-    std::string string;
-    uint32_t flags;
-};
+namespace Hyuzu {
+    namespace UE {
+        namespace UAsset {
+            struct NameInfo {
+                uint32_t size;
+                std::string string;
+                uint32_t flags;
+            };
 
-struct ImportInfo {
-  uint64_t parent_name_id;
-  uint64_t class_id;
-  uint32_t parent_import_id;
-  uint32_t name_id;
-  uint32_t unk_id;
-};
+            struct ImportInfo {
+              uint64_t parent_name_id;
+              uint64_t class_id;
+              uint32_t parent_import_id;
+              uint32_t name_id;
+              uint32_t unk_id;
+            };
 
-struct UEAssetInfo {
-  std::vector<NameInfo> names;
-  std::vector<ImportInfo> imports;
-};
+            struct AssetInfo {
+              std::vector<NameInfo> names;
+              std::vector<ImportInfo> imports;
+            };
 
-UEAssetInfo HYUZU_UE_ExtractUAsset(std::vector<uint8_t> data, size_t& offset_ua);
-void HYUZU_UE_ExtractUExp(std::vector<uint8_t> data, UEAssetInfo info, std::unordered_map<std::string, std::vector<std::string>>& metadata, size_t& offset_ue);
+            AssetInfo ExtractUAsset(std::vector<uint8_t> data, size_t& offset_ua);
+            void ExtractUExp(std::vector<uint8_t> data, AssetInfo info, std::unordered_map<std::string, std::vector<std::string>>& metadata, size_t& offset_ue);
 
-std::vector<float> HYUZU_UE_ConvertStringsToFloats(std::vector<std::string> strings);
+            std::vector<float> ConvertStringsToFloats(std::vector<std::string> strings);
+        }
+    }
+}

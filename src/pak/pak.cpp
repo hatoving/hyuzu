@@ -1,8 +1,8 @@
 #include "pak.h"
 
-HYUZU_UE_Pak* HYUZU_Pak_Load(std::string path) {
+Hyuzu::Pak::PakFile* Hyuzu::Pak::LoadPak(std::string path) {
   std::ifstream pak_file(path, std::ios::binary);
-  HYUZU_UE_Pak* pak = new HYUZU_UE_Pak;
+  PakFile* pak = new PakFile;
       
   if (!pak_file.is_open()) {
       perror("[HYUZU] Error. Failed to load PAK File.");

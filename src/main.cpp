@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <iostream>
 #include <stdlib.h>
 #include <iostream>
 #include <stdint.h>
@@ -26,59 +27,49 @@ int main() {
   float radius = 0.25f;
   SetShaderValue(cover_shader, GetShaderLocation(cover_shader, "corner_scale"), &radius, SHADER_UNIFORM_FLOAT);
 
-  HYUZU_UE_Pak* pak = HYUZU_Pak_Load("paks/fake.pak");
-  HYUZU_Song* song = new HYUZU_Song;
+  Hyuzu::Pak::PakFile* pak = Hyuzu::Pak::LoadPak("paks/fake.pak");
+  Hyuzu::Song::HYUZU_Song* song = new Hyuzu::Song::HYUZU_Song;
 
-  song = HYUZU_Song_Load(pak);
+  song = Hyuzu::Song::Load(pak);
   Sound lead = LoadSound("data/LEAD.ogg");
 
   Texture2D tex = LoadTextureFromImage(song->cover);
   Texture2D mask = LoadTexture("data/cover_mask.png");
 
   SetTargetFPS(60);
-
-  Camera camera = { 0 };
-  camera.position = { 2.0f, 3.0f, 2.0f };
-  camera.target = { 0.0f, 1.0f, 0.0f };
-  camera.up = { 0.0f, 1.0f, 0.0f };
-  camera.fovy = 45.0f;
-  camera.projection = CAMERA_PERSPECTIVE;
-
-  RenderTexture2D target = LoadRenderTexture(1280, 720);
   PlayAudio(lead);
 
   while (!WindowShouldClose())
   {
-      UpdateCamera(&camera, CAMERA_ORBITAL);
+        BeginDrawing();
+            ClearBackground(RAYWHITE);
 
-      BeginTextureMode(target);
-          ClearBackground(RAYWHITE);
-              BeginMode3D(camera);
-              DrawGrid(100, 1.0f);
-          EndMode3D();
-      EndTextureMode();
+            BeginShaderMode(cover_shader);
+                DrawTexture(tex, 30, 30, WHITE);
+                DrawTexture(mask, 30, 30, WHITE);
+            EndShaderMode();
 
-      BeginDrawing();
-          ClearBackground(RAYWHITE);
+            DrawText(song->title.c_str(), 562, 50, 30, BLACK);
+            DrawText(song->artist.c_str(), 562, 90, 20, BLACK);
 
-          DrawTextureRec(target.texture, { 0, 0, (float)target.texture.width, (float)-target.texture.height }, { 0, 0 }, WHITE);
+            DrawText(TextFormat("BPM: %i", song->bpm), 562, 115, 20, BLACK);
+            DrawText(TextFormat("Key: %s %s", Hyuzu::Song::ParseKeyToString(song->key).c_str(), Hyuzu::Song::ParseModeToString(song->mode).c_str()), 562, 140, 20, BLACK);
+            DrawText(TextFormat("Genre: %s\n\nharharharharhahra", Hyuzu::Song::ParseGenreToString(song->genre).c_str()), 562, 190, 20, BLACK);
 
-          BeginShaderMode(cover_shader);
-              DrawTexture(tex, 30, 30, WHITE);
-              DrawTexture(mask, 30, 30, WHITE);
-          EndShaderMode();
+            if (IsKeyPressed(KEY_UP)) { 
+                UpdatePitchAndFormantByValue(lead, 1.0f);
+                printf("pitch up\n");
+            }
+            if (IsKeyPressed(KEY_DOWN)) {
+                UpdatePitchAndFormantByValue(lead, -1.0f);
+                printf("pitch down\n");
+            }
 
-          DrawText(TextFormat("FPS: %i", GetFPS()), 10, 10, 20, RED);
+            DrawFPS(20, 20);
 
-          DrawText(song->title.c_str(), 562, 50, 30, BLACK);
-          DrawText(song->artist.c_str(), 562, 90, 20, BLACK);
-          DrawText(TextFormat("BPM: %i", song->bpm), 562, 115, 20, BLACK);
-          DrawText(TextFormat("Key: %s %s", HYUZU_Song_ParseKeyToString(song->key).c_str(), HYUZU_Song_ParseModeToString(song->mode).c_str()), 562, 140, 20, BLACK);
-          DrawText(TextFormat("Genre: %s\n\nharharharharhahra", HYUZU_Song_ParseGenreToString(song->genre).c_str()), 562, 190, 20, BLACK);
-      EndDrawing();
+        EndDrawing();
   }
 
-  UnloadRenderTexture(target);
   UnloadShader(cover_shader);
   StopSound(lead);
   UnloadSound(lead);

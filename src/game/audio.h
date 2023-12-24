@@ -7,11 +7,12 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <cmath>
 
 #include <raylib.h>
 
-inline int pitch = 0;
-inline int formant = 0;
+inline float semitone = 0;
+inline float formant = 0;
 
 void PlayAudio(Sound audio);
-void UpdatePitchAndFormantByValue(int value);
+void UpdatePitchAndFormantByValue(Sound audio, float value);

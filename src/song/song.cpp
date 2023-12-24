@@ -1,13 +1,13 @@
 #include "song.h"
 
-HYUZU_Song* HYUZU_Song_Load(HYUZU_UE_Pak* pak) {
+Hyuzu::Song::HYUZU_Song* Hyuzu::Song::Load(Hyuzu::Pak::PakFile* pak) {
   HYUZU_Song* song = new HYUZU_Song;
-  HYUZU_Song_GetMetadata(pak, song);
+  GetMetadata(pak, song);
 
   return song;
 }
 
-void HYUZU_Song_GetMetadata(HYUZU_UE_Pak* pak, HYUZU_Song* song) {
+void Hyuzu::Song::GetMetadata(Hyuzu::Pak::PakFile* pak, Hyuzu::Song::HYUZU_Song* song) {
     for (const auto &e : pak->entries)
     {
           auto pos = e.second->info.name.find("DLC/Songs/");
@@ -54,23 +54,23 @@ void HYUZU_Song_GetMetadata(HYUZU_UE_Pak* pak, HYUZU_Song* song) {
         }
     }
 
-    std::vector<std::unordered_map<std::string, std::vector<std::string>>> metadata = HYUZU_Song_ReadMetadata(song, pak);
+    std::vector<std::unordered_map<std::string, std::vector<std::string>>> metadata = Hyuzu::Song::ReadMetadata(song, pak);
 
-    song->title = HYUZU_Song_ReadValueFromMetadata(metadata, "Title")[0];
-    song->artist = HYUZU_Song_ReadValueFromMetadata(metadata, "Artist")[0];
-    song->year = std::stoi(HYUZU_Song_ReadValueFromMetadata(metadata, "Year")[0]);
-    song->bpm = std::stoi(HYUZU_Song_ReadValueFromMetadata(metadata, "BPM")[0]);
+    song->title = Hyuzu::Song::ReadValueFromMetadata(metadata, "Title")[0];
+    song->artist = Hyuzu::Song::ReadValueFromMetadata(metadata, "Artist")[0];
+    song->year = std::stoi(Hyuzu::Song::ReadValueFromMetadata(metadata, "Year")[0]);
+    song->bpm = std::stoi(Hyuzu::Song::ReadValueFromMetadata(metadata, "BPM")[0]);
 
     song->creator = "";
 
-    song->key = HYUZU_Song_ParseStringToKey(HYUZU_Song_ReadValueFromMetadata(metadata, "Key")[0].replace(0, 6, ""));
-    HYUZU_Song_TransposeKeys(song, 7);
-    song->mode = HYUZU_Song_ParseStringToMode(HYUZU_Song_ReadValueFromMetadata(metadata, "Mode")[0].replace(0, 10, ""));
+    song->key = Hyuzu::Song::ParseStringToKey(Hyuzu::Song::ReadValueFromMetadata(metadata, "Key")[0].replace(0, 6, ""));
+    Hyuzu::Song::TransposeKeys(song, 7);
+    song->mode = Hyuzu::Song::ParseStringToMode(Hyuzu::Song::ReadValueFromMetadata(metadata, "Mode")[0].replace(0, 10, ""));
 
-    song->beat.pickups = HYUZU_UE_ConvertStringsToFloats(HYUZU_Song_ReadValueFromMetadata(metadata, "PickupBeats", 1));
-    song->bass.pickups = HYUZU_UE_ConvertStringsToFloats(HYUZU_Song_ReadValueFromMetadata(metadata, "PickupBeats", 2));
-    song->loop.pickups = HYUZU_UE_ConvertStringsToFloats(HYUZU_Song_ReadValueFromMetadata(metadata, "PickupBeats", 3));
-    song->lead.pickups = HYUZU_UE_ConvertStringsToFloats(HYUZU_Song_ReadValueFromMetadata(metadata, "PickupBeats", 4));
+    song->beat.pickups = Hyuzu::UE::UAsset::ConvertStringsToFloats(Hyuzu::Song::ReadValueFromMetadata(metadata, "PickupBeats", 1));
+    song->bass.pickups = Hyuzu::UE::UAsset::ConvertStringsToFloats(Hyuzu::Song::ReadValueFromMetadata(metadata, "PickupBeats", 2));
+    song->loop.pickups = Hyuzu::UE::UAsset::ConvertStringsToFloats(Hyuzu::Song::ReadValueFromMetadata(metadata, "PickupBeats", 3));
+    song->lead.pickups = Hyuzu::UE::UAsset::ConvertStringsToFloats(Hyuzu::Song::ReadValueFromMetadata(metadata, "PickupBeats", 4));
 
     std::string texts = "{ ";
     for (int i = 0; i < song->beat.pickups.size(); i++) {
@@ -81,42 +81,42 @@ void HYUZU_Song_GetMetadata(HYUZU_UE_Pak* pak, HYUZU_Song* song) {
 
     printf("%s\n", texts.c_str());
 
-    song->genre = HYUZU_Song_ParseStringToGenre((HYUZU_Song_ReadValueFromMetadata(metadata, "Genre")[0].replace(0, 8, "")));
+    song->genre = Hyuzu::Song::ParseStringToGenre((Hyuzu::Song::ReadValueFromMetadata(metadata, "Genre")[0].replace(0, 8, "")));
 }
 
-void HYUZU_Song_SetupClip(HYUZU_Song_Clip& clip, std::unordered_map<std::string, std::vector<std::string>> metadata) {
+void Hyuzu::Song::SetupClip(Hyuzu::Song::Clip& clip, std::unordered_map<std::string, std::vector<std::string>> metadata) {
     if (metadata.size() != 0) {
-        clip.pickups = HYUZU_UE_ConvertStringsToFloats(metadata["PickupBeats"]);
+        clip.pickups = Hyuzu::UE::UAsset::ConvertStringsToFloats(metadata["PickupBeats"]);
     }
 }
 
 #pragma region Reading Data From Metadatas
 
-std::vector<std::unordered_map<std::string, std::vector<std::string>>> HYUZU_Song_ReadMetadata(HYUZU_Song* song, HYUZU_UE_Pak* pak) {
+std::vector<std::unordered_map<std::string, std::vector<std::string>>> Hyuzu::Song::ReadMetadata(Hyuzu::Song::HYUZU_Song* song, Hyuzu::Pak::PakFile* pak) {
     std::string path = "DLC/Songs/" + song->short_name + "/Meta_" + song->short_name;
-    std::unordered_map<std::string, std::vector<std::string>> metadata = HYUZU_UE_GetMetadataFromFile(pak->entries[path + ".uasset"]->data,
+    std::unordered_map<std::string, std::vector<std::string>> metadata = Hyuzu::UE::GetMetadataFromFile(pak->entries[path + ".uasset"]->data,
                                                                                                       pak->entries[path + ".uexp"]->data);
 
     path = "Audio/Songs/" + song->short_name + "/" + song->short_name + "bs/Meta_" + song->short_name + "bs";
-    std::unordered_map<std::string, std::vector<std::string>> bass_metadata = HYUZU_UE_GetMetadataFromFile(pak->entries[path + ".uasset"]->data,
+    std::unordered_map<std::string, std::vector<std::string>> bass_metadata = Hyuzu::UE::GetMetadataFromFile(pak->entries[path + ".uasset"]->data,
                                                                                                            pak->entries[path + ".uexp"]->data);
     
     path = "Audio/Songs/" + song->short_name + "/" + song->short_name + "bt/Meta_" + song->short_name + "bt";
-    std::unordered_map<std::string, std::vector<std::string>> beat_metadata = HYUZU_UE_GetMetadataFromFile(pak->entries[path + ".uasset"]->data,
+    std::unordered_map<std::string, std::vector<std::string>> beat_metadata = Hyuzu::UE::GetMetadataFromFile(pak->entries[path + ".uasset"]->data,
                                                                                                            pak->entries[path + ".uexp"]->data);
 
     path = "Audio/Songs/" + song->short_name + "/" + song->short_name + "lp/Meta_" + song->short_name + "lp";
-    std::unordered_map<std::string, std::vector<std::string>> loop_metadata = HYUZU_UE_GetMetadataFromFile(pak->entries[path + ".uasset"]->data,
+    std::unordered_map<std::string, std::vector<std::string>> loop_metadata = Hyuzu::UE::GetMetadataFromFile(pak->entries[path + ".uasset"]->data,
                                                                                                            pak->entries[path + ".uexp"]->data);
 
     path = "Audio/Songs/" + song->short_name + "/" + song->short_name + "ld/Meta_" + song->short_name + "ld";
-    std::unordered_map<std::string, std::vector<std::string>> lead_metadata = HYUZU_UE_GetMetadataFromFile(pak->entries[path + ".uasset"]->data,
+    std::unordered_map<std::string, std::vector<std::string>> lead_metadata = Hyuzu::UE::GetMetadataFromFile(pak->entries[path + ".uasset"]->data,
                                                                                                            pak->entries[path + ".uexp"]->data);
 
     return {metadata, beat_metadata, bass_metadata, loop_metadata, lead_metadata};
 }
 
-std::vector<std::string> HYUZU_Song_ReadValueFromMetadata(std::vector<std::unordered_map<std::string, std::vector<std::string>>> metadata, std::string index) {
+std::vector<std::string> Hyuzu::Song::ReadValueFromMetadata(std::vector<std::unordered_map<std::string, std::vector<std::string>>> metadata, std::string index) {
     std::vector<std::string> vector;
     for (int i = 0; i < metadata.size(); i++) {
         if (metadata[i].count(index) > 0) {
@@ -127,7 +127,7 @@ std::vector<std::string> HYUZU_Song_ReadValueFromMetadata(std::vector<std::unord
     return vector;
 }
 
-std::vector<std::string> HYUZU_Song_ReadValueFromMetadata(std::vector<std::unordered_map<std::string, std::vector<std::string>>> metadata, std::string index, int index2) {
+std::vector<std::string> Hyuzu::Song::ReadValueFromMetadata(std::vector<std::unordered_map<std::string, std::vector<std::string>>> metadata, std::string index, int index2) {
     if (metadata[index2].count(index) > 0) {
         return (metadata[index2])[index];
     } else {
@@ -139,139 +139,139 @@ std::vector<std::string> HYUZU_Song_ReadValueFromMetadata(std::vector<std::unord
 
 #pragma region Parsing Enums
 
-HYUZU_Song_Keys HYUZU_Song_ParseStringToKey(std::string key) {
+Hyuzu::Song::Keys Hyuzu::Song::ParseStringToKey(std::string key) {
     if (key == "C") {
-        return HYUZU_Song_Keys::C;
+        return Hyuzu::Song::Keys::C;
     } else if (key == "Db") {
-        return HYUZU_Song_Keys::Db;
+        return Hyuzu::Song::Keys::Db;
     } else if (key == "D") {
-        return HYUZU_Song_Keys::D;
+        return Hyuzu::Song::Keys::D;
     } else if (key == "Eb") {
-        return HYUZU_Song_Keys::Eb;
+        return Hyuzu::Song::Keys::Eb;
     } else if (key == "E") {
-        return HYUZU_Song_Keys::E;
+        return Hyuzu::Song::Keys::E;
     } else if (key == "F") {
-        return HYUZU_Song_Keys::F;
+        return Hyuzu::Song::Keys::F;
     } else if (key == "Gb") {
-        return HYUZU_Song_Keys::Gb;
+        return Hyuzu::Song::Keys::Gb;
     } else if (key == "G") {
-        return HYUZU_Song_Keys::G;
+        return Hyuzu::Song::Keys::G;
     } else if (key == "Ab") {
-        return HYUZU_Song_Keys::Ab;
+        return Hyuzu::Song::Keys::Ab;
     } else if (key == "A") {
-        return HYUZU_Song_Keys::A;
+        return Hyuzu::Song::Keys::A;
     } else if (key == "Bb") {
-        return HYUZU_Song_Keys::Bb;
+        return Hyuzu::Song::Keys::Bb;
     } else if (key == "B") {
-        return HYUZU_Song_Keys::B;
+        return Hyuzu::Song::Keys::B;
     } else {
         // Handle the case where the string doesn't match any enum value
         throw std::invalid_argument("Invalid key string");
     }
 };
 
-std::string HYUZU_Song_ParseKeyToString(HYUZU_Song_Keys key) {
+std::string Hyuzu::Song::ParseKeyToString(Hyuzu::Song::Keys key) {
     switch (key) {
-        case HYUZU_Song_Keys::C:
+        case Hyuzu::Song::Keys::C:
             return "C";
-        case HYUZU_Song_Keys::Db:
+        case Hyuzu::Song::Keys::Db:
             return "Db";
-        case HYUZU_Song_Keys::D:
+        case Hyuzu::Song::Keys::D:
             return "D";
-        case HYUZU_Song_Keys::Eb:
+        case Hyuzu::Song::Keys::Eb:
             return "Eb";
-        case HYUZU_Song_Keys::E:
+        case Hyuzu::Song::Keys::E:
             return "E";
-        case HYUZU_Song_Keys::F:
+        case Hyuzu::Song::Keys::F:
             return "F";
-        case HYUZU_Song_Keys::Gb:
+        case Hyuzu::Song::Keys::Gb:
             return "Gb";
-        case HYUZU_Song_Keys::G:
+        case Hyuzu::Song::Keys::G:
             return "G";
-        case HYUZU_Song_Keys::Ab:
+        case Hyuzu::Song::Keys::Ab:
             return "Ab";
-        case HYUZU_Song_Keys::A:
+        case Hyuzu::Song::Keys::A:
             return "A";
-        case HYUZU_Song_Keys::Bb:
+        case Hyuzu::Song::Keys::Bb:
             return "Bb";
-        case HYUZU_Song_Keys::B:
+        case Hyuzu::Song::Keys::B:
             return "B";
         default:
-            throw std::invalid_argument("Invalid HYUZU_Song_Keys enum value");
+            throw std::invalid_argument("Invalid Hyuzu::Song::Keys enum value");
     }
 }
 
-HYUZU_Song_Modes HYUZU_Song_ParseStringToMode(std::string mode) {
+Hyuzu::Song::Modes Hyuzu::Song::ParseStringToMode(std::string mode) {
     if (mode == "Major") {
-        return HYUZU_Song_Modes::Major;
+        return Hyuzu::Song::Modes::Major;
     } else if (mode == "Minor") {
-        return HYUZU_Song_Modes::Minor;
+        return Hyuzu::Song::Modes::Minor;
     } else {
         // Handle the case where the string doesn't match any enum value
         throw std::invalid_argument("Invalid mode string");
     }
 };
 
-std::string HYUZU_Song_ParseModeToString(HYUZU_Song_Modes mode) {
+std::string Hyuzu::Song::ParseModeToString(Hyuzu::Song::Modes mode) {
     switch (mode) {
-        case HYUZU_Song_Modes::Major:
+        case Hyuzu::Song::Modes::Major:
             return "Major";
-        case HYUZU_Song_Modes::Minor:
+        case Hyuzu::Song::Modes::Minor:
             return "Minor";
         default:
-            throw std::invalid_argument("Invalid HYUZU_Song_Modes enum value");
+            throw std::invalid_argument("Invalid Hyuzu::Song::Modes enum value");
     }
 }
 
-HYUZU_Song_Genres HYUZU_Song_ParseStringToGenre(std::string genre) {
+Hyuzu::Song::Genres Hyuzu::Song::ParseStringToGenre(std::string genre) {
     if (genre == "Classical") {
-        return HYUZU_Song_Genres::Classical;
+        return Hyuzu::Song::Genres::Classical;
     } else if (genre == "Country") {
-        return HYUZU_Song_Genres::Country;
+        return Hyuzu::Song::Genres::Country;
     } else if (genre == "Rock") {
-        return HYUZU_Song_Genres::Rock;
+        return Hyuzu::Song::Genres::Rock;
     } else if (genre == "RnB") {
-        return HYUZU_Song_Genres::RnB;
+        return Hyuzu::Song::Genres::RnB;
     } else if (genre == "HipHop") {
-        return HYUZU_Song_Genres::HipHop;
+        return Hyuzu::Song::Genres::HipHop;
     } else if (genre == "LatinAndCarribean") {
-        return HYUZU_Song_Genres::International;
+        return Hyuzu::Song::Genres::International;
     } else if (genre == "Dance") {
-        return HYUZU_Song_Genres::Dance;
+        return Hyuzu::Song::Genres::Dance;
     } else if (genre == "Pop") {
-        return HYUZU_Song_Genres::Pop;
+        return Hyuzu::Song::Genres::Pop;
     }      else {
         // Handle the case where the string doesn't match any enum value
         throw std::invalid_argument("Invalid genre string");
     }
 };
 
-std::string HYUZU_Song_ParseGenreToString(HYUZU_Song_Genres mode) {
+std::string Hyuzu::Song::ParseGenreToString(Hyuzu::Song::Genres mode) {
     switch (mode) {
-        case HYUZU_Song_Genres::Classical:
+        case Hyuzu::Song::Genres::Classical:
             return "Classical";
-        case HYUZU_Song_Genres::Country:
+        case Hyuzu::Song::Genres::Country:
             return "Country";
-        case HYUZU_Song_Genres::Rock:
+        case Hyuzu::Song::Genres::Rock:
             return "Rock";
-        case HYUZU_Song_Genres::RnB:
+        case Hyuzu::Song::Genres::RnB:
             return "RnB";
-        case HYUZU_Song_Genres::HipHop:
+        case Hyuzu::Song::Genres::HipHop:
             return "HipHop";
-        case HYUZU_Song_Genres::International:
+        case Hyuzu::Song::Genres::International:
             return "International";
-        case HYUZU_Song_Genres::Dance:
+        case Hyuzu::Song::Genres::Dance:
             return "Dance";
-        case HYUZU_Song_Genres::Pop:
+        case Hyuzu::Song::Genres::Pop:
             return "Pop";
         default:
-            throw std::invalid_argument("Invalid HYUZU_Song_Genres enum value");
+            throw std::invalid_argument("Invalid Hyuzu::Song::Genres enum value");
     }
 }
 
 #pragma endregion
 
-void HYUZU_Song_TransposeKeys(HYUZU_Song* song, int key) {
+void Hyuzu::Song::TransposeKeys(Hyuzu::Song::HYUZU_Song* song, int key) {
     song->transposes.clear();
 
     for (int i = 0; i < 12; i++) {
